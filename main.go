@@ -62,9 +62,21 @@ func generateProject(groupId, artifactId, version, pkg string) error {
 }
 
 func main() {
-	installFlag := flag.Bool("install", false, "Installer le JAR de l'archetype")
-	testFlag := flag.Bool("test", false, "Tester la génération après installation")
-	customFlag := flag.Bool("custom", false, "Personnaliser groupId, artifactId, version et package")
+	// installFlag := flag.Bool("install", false, "Installer le JAR de l'archetype")
+	// testFlag := flag.Bool("test", false, "Tester la génération après installation")
+	// customFlag := flag.Bool("custom", false, "Personnaliser groupId, artifactId, version et package")
+	
+	
+	installFlag := flag.Bool("install", false, "⚙️ Installer le JAR de l'archetype")
+	testFlag := flag.Bool("test", false, "🧪 Tester la génération après installation")
+	customFlag := flag.Bool("custom", false, "✏️ Personnaliser groupId, artifactId, version et package")
+
+	// Redéfinition de l'usage avec émoticônes
+	flag.Usage = func() {
+		fmt.Println("📣 Copyright : Maodo DIOP Speaker, Software Architect <dmaodo@gmail.com>")
+		fmt.Printf("🛠️  Usage de %s:\n", os.Args[0])
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
 	jarPath := "factory/usine.jar"
