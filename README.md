@@ -1,5 +1,3 @@
-Parfait ! Voici un exemple complet et professionnel de **README** pour ton projet `archetype-cli`, rédigé pour un usage clair et direct par les développeurs :
-
 ````markdown
 # Archetype CLI - Starter Kit Maven
 
@@ -134,3 +132,4 @@ Si tu veux, je peux aussi te **préparer une version améliorée** qui inclut **
 
 Veux‑tu que je fasse ça ?
 ```
+
