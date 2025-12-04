@@ -9,173 +9,173 @@ import (
 	"strings"
 )
 
-// runCommand exécute une commande shell et affiche la sortie en temps réel
-func runCommand(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
+func checkCommandExists(name string, versionArg string) (bool, string) {
+	cmd := exec.Command(name, versionArg)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false, ""
+	}
+	return true, strings.TrimSpace(string(out))
+}
+
+func checkProjectExists(dir string) bool {
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		return true
+	}
+	return false
+}
+
+func deleteProject(dir string) error {
+	return os.RemoveAll(dir)
+}
+
+func installJar(jarPath string) error {
+	cmd := exec.Command("mvn", "install:install-file",
+		"-Dfile="+jarPath,
+		"-DgroupId=com.votreorganisation.archetypes",
+		"-DartifactId=starter-kit-archetype",
+		"-Dversion=0.0.1-SNAPSHOT",
+		"-Dpackaging=jar",
+	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
 	return cmd.Run()
 }
 
-// checkToolVersion vérifie si un outil est installé et affiche sa version
-func checkToolVersion(tool string, versionArg string) (string, error) {
-	cmd := exec.Command(tool, versionArg)
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
+func generateProject(groupId, artifactId, version, pkg string) error {
+	args := []string{
+		"archetype:generate",
+		"-DarchetypeCatalog=local",
+		"-DarchetypeGroupId=com.votreorganisation.archetypes",
+		"-DarchetypeArtifactId=starter-kit-archetype",
+		"-DarchetypeVersion=0.0.1-SNAPSHOT",
+		"-DgroupId=" + groupId,
+		"-DartifactId=" + artifactId,
+		"-Dversion=" + version,
+		"-Dpackage=" + pkg,
+		"-DinteractiveMode=false",
 	}
-	lines := strings.Split(string(out), "\n")
-	if len(lines) > 0 {
-		return strings.TrimSpace(lines[0]), nil
-	}
-	return "", nil
+	cmd := exec.Command("mvn", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func main() {
-	// Déclaration des flags
-	install := flag.Bool("install", false, "Installer le jar de l'archetype localement")
-	testGen := flag.Bool("test", false, "Tester la génération d'un projet Maven après installation")
-	custom := flag.Bool("custom", false, "Personnaliser les valeurs Maven pour la génération")
+	installFlag := flag.Bool("install", false, "Installer le JAR de l'archetype")
+	testFlag := flag.Bool("test", false, "Tester la génération après installation")
+	customFlag := flag.Bool("custom", false, "Personnaliser groupId, artifactId, version et package")
 	flag.Parse()
 
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Println("🔍 Vérification des outils requis...")
-
-	javaVersion, err := checkToolVersion("java", "-version")
-	if err != nil {
-		fmt.Println("❌ Java n'est pas installé ou n'est pas accessible")
-		os.Exit(1)
-	}
-	fmt.Println("✅ Java :", javaVersion)
-
-	mavenVersion, err := checkToolVersion("mvn", "-v")
-	if err != nil {
-		fmt.Println("❌ Maven n'est pas installé ou n'est pas accessible")
-		os.Exit(1)
-	}
-	fmt.Println("✅ Maven :", mavenVersion)
-
-	// Vérification de l'existence du jar
 	jarPath := "factory/usine.jar"
 	if _, err := os.Stat(jarPath); os.IsNotExist(err) {
 		fmt.Printf("❌ Fichier JAR introuvable : %s\n", jarPath)
 		return
 	}
 
-	// Définition des valeurs par défaut
-	groupId := "baobao"
-	artifactId := "pi-zb"
-	version := "1.0-SNAPSHOT"
-	packageName := "sn.cbao"
+	fmt.Println("🔍 Vérification des outils requis...")
+	javaOK, javaVersion := checkCommandExists("java", "-version")
+	mvnOK, mvnVersion := checkCommandExists("mvn", "-v")
 
-	// Installation du jar si demandé
-	if *install {
-		fmt.Println("⚙️ Installation du jar en local...")
-		err := runCommand("mvn", "install:install-file",
-			"-Dfile="+jarPath,
-			"-DgroupId=com.votreorganisation.archetypes",
-			"-DartifactId=starter-kit-archetype",
-			"-Dversion=0.0.1-SNAPSHOT",
-			"-Dpackaging=jar",
-		)
-		if err != nil {
-			fmt.Println("❌ Échec de l'installation :", err)
-			os.Exit(1)
+	if !javaOK || !mvnOK {
+		fmt.Println("❌ Java et Maven doivent être installés pour continuer.")
+		if !javaOK {
+			fmt.Println("Java non trouvé")
+		} else {
+			fmt.Printf("Java trouvé: %s\n", javaVersion)
 		}
-		fmt.Println("✅ Installation réussie !")
-		fmt.Println("\nVous pouvez maintenant exécuter : mvn archetype:generate -DarchetypeCatalog=local")
+		if !mvnOK {
+			fmt.Println("Maven non trouvé")
+		} else {
+			fmt.Printf("Maven trouvé: %s\n", mvnVersion)
+		}
+		return
 	}
 
-	// Personnalisation des valeurs Maven si custom
-	if *custom {
-		fmt.Println("\n⚡ Personnalisation des valeurs Maven")
+	fmt.Printf("✅ Java: %s\n", javaVersion)
+	fmt.Printf("✅ Maven: %s\n", mvnVersion)
 
-		fmt.Printf("GroupId (%s) : ", groupId)
+	if *installFlag {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("⚙️ Installer le JAR de l'archetype localement ? (y/n) : ")
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(input)
-		if input != "" {
-			groupId = input
-		}
-
-		fmt.Printf("ArtifactId (%s) : ", artifactId)
-		input, _ = reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-		if input != "" {
-			artifactId = input
-		}
-
-		fmt.Printf("Version (%s) : ", version)
-		input, _ = reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-		if input != "" {
-			version = input
-		}
-
-		fmt.Printf("Package (%s) : ", packageName)
-		input, _ = reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-		if input != "" {
-			packageName = input
-		}
-
-		// Proposer la génération après saisie
-		fmt.Print("\n💡 Voulez-vous générer un projet Maven avec ces paramètres maintenant ? (y/n) : ")
-		choice, _ := reader.ReadString('\n')
-		choice = strings.TrimSpace(choice)
-		if strings.ToLower(choice) == "y" {
-			fmt.Println("\n⚙️ Génération du projet Maven...")
-			err := runCommand("mvn", "archetype:generate",
-				"-DarchetypeCatalog=local",
-				"-DarchetypeGroupId=com.votreorganisation.archetypes",
-				"-DarchetypeArtifactId=starter-kit-archetype",
-				"-DarchetypeVersion=0.0.1-SNAPSHOT",
-				"-DgroupId="+groupId,
-				"-DartifactId="+artifactId,
-				"-Dversion="+version,
-				"-Dpackage="+packageName,
-				"-DinteractiveMode=false",
-			)
-			if err != nil {
-				fmt.Println("❌ Échec de la génération :", err)
-				os.Exit(1)
+		if input == "y" || input == "Y" {
+			fmt.Println("⚙️ Installation du jar en local...")
+			if err := installJar(jarPath); err != nil {
+				fmt.Printf("❌ Erreur lors de l'installation du JAR: %v\n", err)
+				return
 			}
-			fmt.Println("✅ Projet Maven généré avec succès !")
+			fmt.Println("✅ Installation réussie !")
+			fmt.Println("Vous pouvez maintenant exécuter : mvn archetype:generate -DarchetypeCatalog=local")
 		} else {
-			fmt.Println("\nℹ️ Pour générer manuellement, utilisez la commande suivante :")
-			fmt.Printf(`mvn archetype:generate \
-  -DarchetypeCatalog=local \
-  -DarchetypeGroupId=com.votreorganisation.archetypes \
-  -DarchetypeArtifactId=starter-kit-archetype \
-  -DarchetypeVersion=0.0.1-SNAPSHOT \
-  -DgroupId=%s \
-  -DartifactId=%s \
-  -Dversion=%s \
-  -Dpackage=%s \
-  -DinteractiveMode=false
-`, groupId, artifactId, version, packageName)
+			fmt.Println("⚠️ Installation annulée.")
 		}
 	}
 
-	// Test automatique si demandé avec --test
-	if *testGen && !*custom {
-		fmt.Println("\n⚙️ Test de génération du projet Maven avec les valeurs par défaut...")
-		err := runCommand("mvn", "archetype:generate",
-			"-DarchetypeCatalog=local",
-			"-DarchetypeGroupId=com.votreorganisation.archetypes",
-			"-DarchetypeArtifactId=starter-kit-archetype",
-			"-DarchetypeVersion=0.0.1-SNAPSHOT",
-			"-DgroupId="+groupId,
-			"-DartifactId="+artifactId,
-			"-Dversion="+version,
-			"-Dpackage="+packageName,
-			"-DinteractiveMode=false",
-		)
-		if err != nil {
-			fmt.Println("❌ Échec de la génération :", err)
-			os.Exit(1)
+	if *testFlag || *customFlag {
+		reader := bufio.NewReader(os.Stdin)
+
+		// Valeurs par défaut
+		groupId := "baobao"
+		artifactId := "pi-zb"
+		version := "1.0-SNAPSHOT"
+		pkg := "sn.cbao"
+
+		if *customFlag {
+			fmt.Println("⚡ Personnalisation des valeurs Maven (laisser vide pour défauts)")
+			fmt.Printf("GroupId (%s) : ", groupId)
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+			if input != "" {
+				groupId = input
+			}
+
+			fmt.Printf("ArtifactId (%s) : ", artifactId)
+			input, _ = reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+			if input != "" {
+				artifactId = input
+			}
+
+			fmt.Printf("Version (%s) : ", version)
+			input, _ = reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+			if input != "" {
+				version = input
+			}
+
+			fmt.Printf("Package (%s) : ", pkg)
+			input, _ = reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+			if input != "" {
+				pkg = input
+			}
 		}
-		fmt.Println("✅ Projet Maven généré avec succès !")
+
+		if checkProjectExists(artifactId) {
+			fmt.Printf("⚠️ Le projet '%s' existe déjà.\n", artifactId)
+			fmt.Print("Voulez-vous le supprimer et régénérer le projet ? (y/n) : ")
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+			if input == "y" || input == "Y" {
+				if err := deleteProject(artifactId); err != nil {
+					fmt.Printf("❌ Impossible de supprimer le projet : %v\n", err)
+					return
+				}
+				fmt.Println("✅ Projet supprimé avec succès.")
+			} else {
+				fmt.Println("❌ Génération annulée par l'utilisateur.")
+				return
+			}
+		}
+
+		fmt.Println("⚡ Génération du projet Maven à partir de l'archetype...")
+		if err := generateProject(groupId, artifactId, version, pkg); err != nil {
+			fmt.Printf("❌ Erreur lors de la génération du projet : %v\n", err)
+			return
+		}
+		fmt.Println("✅ Projet généré avec succès !")
+		fmt.Printf("Vous pouvez maintenant ouvrir le projet '%s'\n", artifactId)
 	}
 }
