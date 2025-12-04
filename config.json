@@ -1,0 +1,17 @@
+{
+  "project": {
+    "jar_path": "factory/usine.jar",
+    "copyright": "Maodo DIOP Speaker, Software Architect <dmaodo@gmail.com>"
+  },
+  "archetype": {
+    "group_id": "com.votreorganisation.archetypes",
+    "artifact_id": "starter-kit-archetype",
+    "version": "0.0.1-SNAPSHOT"
+  },
+  "defaults": {
+    "group_id": "baobao",
+    "artifact_id": "pi-zb",
+    "version": "1.0-SNAPSHOT",
+    "package_name": "sn.cbao"
+  }
+}
