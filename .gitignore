@@ -1,0 +1,54 @@
+# ----------------------
+# Go specific
+# ----------------------
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Go modules
+/go.sum
+/go.mod
+
+# IDE/editor files
+*.idea/
+*.vscode/
+*.swp
+*.DS_Store
+
+# ----------------------
+# Maven / Java
+# ----------------------
+# Target directory
+target/
+
+# Maven Wrapper files
+.mvn/
+mvnw
+mvnw.cmd
+
+# Logs
+*.log
+
+# ----------------------
+# OS generated files
+# ----------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ----------------------
+# Factory JAR
+# ----------------------
+factory/*.jar
