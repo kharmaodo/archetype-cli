@@ -51,5 +51,4 @@ Desktop.ini
 # ----------------------
 # Factory JAR
 # ----------------------
-factory/*.jar
 archetype-cli
